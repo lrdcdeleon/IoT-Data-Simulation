@@ -7,20 +7,39 @@ ganache_url = "http://127.0.0.1:7545"
 web3 = Web3(Web3.HTTPProvider(ganache_url))
 web3.eth.default_account = web3.eth.accounts[0]
 
-# 2. Contract Details (Your verified address)
-contract_address = Web3.to_checksum_address("0x0EC699C49fa756CF8E0A59fD7d5aEfE753A2F8Da")
+# 2. Contract Details
+contract_address = Web3.to_checksum_address("0x4f78b869e89FC48368379D215EAca9414Ff2f700")
+
+# COMPLETE ABI INCLUDING VIEWS
 abi = [
-    {"inputs": [{"internalType": "string", "name": "_deviceId", "type": "string"}, {"internalType": "string", "name": "_dataType", "type": "string"}, {"internalType": "string", "name": "_dataValue", "type": "string"}], "name": "storeData", "outputs": [], "stateMutability": "nonpayable", "type": "function"},
-    {"inputs": [], "name": "getTotalRecords", "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}], "stateMutability": "view", "type": "function"}
+    {
+        "inputs": [
+            {"internalType": "string", "name": "_deviceId", "type": "string"},
+            {"internalType": "string", "name": "_dataType", "type": "string"},
+            {"internalType": "string", "name": "_dataValue", "type": "string"}
+        ],
+        "name": "storeData",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "getTotalRecords",
+        "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+        "stateMutability": "view",
+        "type": "function"
+    }
 ]
+
 contract = web3.eth.contract(address=contract_address, abi=abi)
 
-# 3. Load your Logistics CSV (Week 2 Data)
+# 3. Load your Logistics CSV
 df = pd.read_csv("MO-IT148 Homework IoT Data Simulation S2101 Group 28.csv")
 
 print(f"Starting bulk upload of {len(df)} records...")
 
-# 4. Loop through the CSV and send to Blockchain 
+# 4. Loop through the CSV and send to Blockchain
 for i, row in df.iterrows():
     try:
         txn = contract.functions.storeData(
@@ -29,12 +48,10 @@ for i, row in df.iterrows():
             str(row["data_value"])
         ).transact()
         
-        # Wait for receipt to confirm storage [cite: 431]
         receipt = web3.eth.wait_for_transaction_receipt(txn)
         print(f"✅ [{i+1}/100] Data Stored! Txn: {receipt.transactionHash.hex()[:10]}...")
         
-        # Small delay to avoid flooding Ganache [cite: 436]
-        time.sleep(0.1) 
+        time.sleep(0.05) # Kept fast to save time
     except Exception as e:
         print(f"❌ Error at row {i}: {e}")
 
