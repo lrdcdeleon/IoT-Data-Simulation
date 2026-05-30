@@ -8,7 +8,7 @@ web3 = Web3(Web3.HTTPProvider(ganache_url))
 web3.eth.default_account = web3.eth.accounts[0]
 
 # 2. Contract Details
-contract_address = Web3.to_checksum_address("0x4f78b869e89FC48368379D215EAca9414Ff2f700")
+contract_address = Web3.to_checksum_address("0xCaddCE47bf3682AAB3fBb8F905bb6756290F0013")
 
 # COMPLETE ABI INCLUDING VIEWS
 abi = [

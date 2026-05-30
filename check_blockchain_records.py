@@ -5,7 +5,7 @@ ganache_url = "http://127.0.0.1:7545"
 web3 = Web3(Web3.HTTPProvider(ganache_url))
 
 # 2. Contract Configurations (Using your fresh deployed address)
-contract_address = Web3.to_checksum_address("0x4f78b869e89FC48368379D215EAca9414Ff2f700")
+contract_address = Web3.to_checksum_address("0xCaddCE47bf3682AAB3fBb8F905bb6756290F0013")
 
 # Pristine ABI layout matching your exact Solidity contract variables
 abi = [
