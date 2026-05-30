@@ -1,50 +1,47 @@
 import pandas as pd
+import numpy as np
+from web3 import Web3
 
-# 1. Load the simulated data
-# Using the exact filename from your Week 2 output
-input_file = "MO-IT148 Homework IoT Data Simulation S2101 Group 28.csv"
-df = pd.read_csv(input_file)
+# 1. Connect to Ganache
+ganache_url = "http://127.0.0.1:7545"
+web3 = Web3(Web3.HTTPProvider(ganache_url))
 
-print("--- Original Data Preview ---")
+# 2. Contract Configurations
+contract_address = Web3.to_checksum_address("0x4f78b869e89FC48368379D215EAca9414Ff2f700")
+abi = [
+    {"inputs": [], "name": "getTotalRecords", "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}], "stateMutability": "view", "type": "function"},
+    {"inputs": [{"internalType": "uint256", "name": "index", "type": "uint256"}], "name": "getRecord", "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}, {"internalType": "string", "name": "", "type": "string"}, {"internalType": "string", "name": "", "type": "string"}, {"internalType": "string", "name": "", "type": "string"}], "stateMutability": "view", "type": "function"}
+]
+contract = web3.eth.contract(address=contract_address, abi=abi)
+
+# 3. Get total stored records
+total_records = contract.functions.getTotalRecords().call()
+print(f"Total IoT records stored: {total_records}")
+
+# 4. Fetch all stored IoT data
+data = []
+print("Downloading records from blockchain... (This takes a few seconds)")
+for i in range(total_records):
+    record = contract.functions.getRecord(i).call()
+    data.append({
+        "timestamp": record[0],
+        "device_id": record[1],
+        "data_type": record[2],
+        "data_value": record[3]
+    })
+
+# 5. Convert to DataFrame & Format Timestamps
+df = pd.DataFrame(data)
+df["timestamp"] = pd.to_datetime(df["timestamp"], unit="s")
+print("\n--- Raw Data ---")
 print(df.head())
 
-# 2. Check for missing values
-print("\nChecking for null values:")
-print(df.isnull().sum())
+# 6. Extract numeric values & Handle Missing Values
+df["numeric_value"] = df["data_value"].str.extract(r'(\d+\.?\d*)').astype(float)
+df.fillna(0, inplace=True)
+print("\n--- Cleaned Data ---")
+print(df.head())
 
-# 3. Robust Data Cleaning Function
-def clean_value(val):
-    if isinstance(val, str):
-        # FIX: If it's a GPS coordinate pair, take only the first part (Latitude)
-        if ',' in val:
-            val = val.split(',')[0]
-        
-        # Keep only digits and the first decimal point found
-        numeric_part = ""
-        has_decimal = False
-        for char in val:
-            if char.isdigit():
-                numeric_part += char
-            elif char == '.' and not has_decimal:
-                numeric_part += char
-                has_decimal = True
-        
-        try:
-            return float(numeric_part) if numeric_part else 0.0
-        except ValueError:
-            return 0.0
-    return float(val) if pd.notnull(val) else 0.0
-
-# Create the numeric column for analysis
-df['numeric_value'] = df['data_value'].apply(clean_value)
-
-# 4. Convert timestamp to actual datetime format
-df['timestamp'] = pd.to_datetime(df['timestamp'])
-
-# 5. Save the cleaned data
-output_file = "cleaned_iot_data.csv"
-df.to_csv(output_file, index=False)
-
-print(f"\n✅ Data cleaning complete! Saved as: {output_file}")
-print("--- Cleaned Data Preview ---")
-print(df[['timestamp', 'data_type', 'numeric_value']].head())
+# 7. Save to CSV
+df.to_csv("cleaned_iot_data.csv", index=False)
+print("\n✅ Cleaned IoT data saved successfully as cleaned_iot_data.csv")
